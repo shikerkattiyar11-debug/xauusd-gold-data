@@ -49,6 +49,22 @@ python main.py --poll-seconds 300
 python main.py --once
 ```
 
+## Live one-minute collector
+
+For live ticks, set `TWELVE_DATA_API_KEY` and run:
+
+```bash
+python live_collector.py
+```
+
+The collector reconnects automatically and writes live ticks to `data/live_ohlcv.db`,
+one-minute candles to `data/xauusd_1m_live.csv`, and a Parquet snapshot to
+`data/xauusd_1m_live.parquet`. The `Volume` column is the number of received quotes,
+because a quote stream does not provide exchange-traded volume for spot XAU/USD.
+
+This process must stay running on a local machine or VPS. GitHub Actions and GitHub
+Pages are not suitable for a one-second live stream.
+
 ## Auto-update behavior
 
 The project includes a GitHub Actions workflow that runs every 5 minutes and pushes updated CSV files back to the repository automatically.
