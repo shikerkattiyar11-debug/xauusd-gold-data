@@ -156,8 +156,16 @@ def update_timeframe(interval: str, file_name: str) -> None:
         existing = pd.read_csv(output_path)
         if not existing.empty and "Datetime" in existing.columns:
             existing["Datetime"] = existing["Datetime"].astype(str)
-            latest_existing = existing["Datetime"].max()
-            data = data[data["Datetime"] > latest_existing].copy()
+            existing = existing[CSV_COLUMNS]
+            combined = pd.concat([existing, data], ignore_index=True)
+            combined = combined.drop_duplicates(subset=["Datetime"], keep="last")
+            combined = combined.sort_values("Datetime").reset_index(drop=True)
+            if len(combined) > len(existing):
+                print(f"Found {len(combined) - len(existing)} new rows for {file_name}")
+            elif not data.empty and not existing.tail(1).equals(data.tail(1)):
+                print(f"Updated the latest candle for {file_name}")
+            combined.to_csv(output_path, index=False)
+            return
 
     if not data.empty:
         if output_path.exists():
