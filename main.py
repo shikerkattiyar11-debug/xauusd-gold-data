@@ -1,6 +1,11 @@
 import argparse
+import json
+import os
 import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
+from urllib.parse import urlencode
+from urllib.request import Request, urlopen
 
 import pandas as pd
 import yfinance as yf
@@ -81,11 +86,7 @@ def resample_ohlcv_to_minutes(df: pd.DataFrame, interval_minutes: int) -> pd.Dat
     return resampled[CSV_COLUMNS]
 
 
-def fetch_ohlcv(interval: str, period: str) -> pd.DataFrame:
-    if interval == "10m":
-        five_minute_data = fetch_ohlcv("5m", period)
-        return resample_ohlcv_to_minutes(five_minute_data, 10)
-
+def fetch_from_yahoo(interval: str, period: str) -> pd.DataFrame:
     data = yf.download(
         tickers="GC=F",
         period=period,
@@ -99,6 +100,101 @@ def fetch_ohlcv(interval: str, period: str) -> pd.DataFrame:
     if isinstance(data.columns, pd.MultiIndex):
         data = data.xs("GC=F", level=0, axis=1)
     return normalize_ohlcv(data)
+
+
+def fetch_json(url: str) -> dict:
+    request = Request(url, headers={"User-Agent": "xauusd-gold-data/1.0"})
+    with urlopen(request, timeout=25) as response:
+        return json.loads(response.read().decode("utf-8"))
+
+
+def fetch_from_twelve_data(interval: str, period: str) -> pd.DataFrame:
+    api_key = os.getenv("TWELVE_DATA_API_KEY")
+    if not api_key or interval not in {"5m", "15m", "1h", "1d"}:
+        return pd.DataFrame()
+
+    payload = fetch_json("https://api.twelvedata.com/time_series?" + urlencode({
+        "symbol": "XAU/USD",
+        "interval": interval,
+        "outputsize": 5000,
+        "timezone": "UTC",
+        "apikey": api_key,
+    }))
+    if "values" not in payload:
+        raise ValueError(payload.get("message", "Twelve Data returned no values."))
+
+    rows = []
+    for value in payload["values"]:
+        rows.append({
+            "Datetime": value["datetime"],
+            "Open": value["open"],
+            "High": value["high"],
+            "Low": value["low"],
+            "Close": value["close"],
+            "Volume": value.get("volume", 0),
+        })
+    return normalize_ohlcv(pd.DataFrame(rows).set_index("Datetime"))
+
+
+def fetch_from_alpha_vantage(interval: str, period: str) -> pd.DataFrame:
+    api_key = os.getenv("ALPHA_VANTAGE_API_KEY")
+    if not api_key or interval not in {"5m", "15m", "1h"}:
+        return pd.DataFrame()
+
+    payload = fetch_json("https://www.alphavantage.co/query?" + urlencode({
+        "function": "FX_INTRADAY",
+        "from_symbol": "XAU",
+        "to_symbol": "USD",
+        "interval": interval,
+        "outputsize": "full",
+        "apikey": api_key,
+    }))
+    series_key = next((key for key in payload if key.startswith("Time Series FX")), None)
+    if not series_key:
+        raise ValueError(payload.get("Note", payload.get("Information", "Alpha Vantage returned no values.")))
+
+    rows = []
+    for timestamp, value in payload[series_key].items():
+        rows.append({
+            "Datetime": timestamp,
+            "Open": value["1. open"],
+            "High": value["2. high"],
+            "Low": value["3. low"],
+            "Close": value["4. close"],
+            "Volume": 0,
+        })
+    return normalize_ohlcv(pd.DataFrame(rows).set_index("Datetime"))
+
+
+def fetch_ohlcv(interval: str, period: str) -> pd.DataFrame:
+    if interval == "10m":
+        five_minute_data = fetch_ohlcv("5m", period)
+        return resample_ohlcv_to_minutes(five_minute_data, 10)
+
+    providers = {
+        "Yahoo Finance": lambda: fetch_from_yahoo(interval, period),
+        "Twelve Data": lambda: fetch_from_twelve_data(interval, period),
+        "Alpha Vantage": lambda: fetch_from_alpha_vantage(interval, period),
+    }
+    results = []
+    with ThreadPoolExecutor(max_workers=len(providers)) as executor:
+        pending = {executor.submit(fetcher): name for name, fetcher in providers.items()}
+        for future in as_completed(pending):
+            provider = pending[future]
+            try:
+                data = future.result()
+                if not data.empty:
+                    latest = data["Datetime"].iloc[-1]
+                    print(f"{provider}: latest {latest}")
+                    results.append((latest, provider, data))
+            except Exception as exc:
+                print(f"{provider} unavailable for {interval}: {exc}")
+
+    if not results:
+        raise ValueError(f"No configured market-data provider returned {interval} data.")
+    latest, provider, data = max(results, key=lambda result: result[0])
+    print(f"Selected {provider} for {interval}: latest {latest}")
+    return data
 
 
 def fetch_ohlcv_with_retry(interval: str, period: str) -> pd.DataFrame:

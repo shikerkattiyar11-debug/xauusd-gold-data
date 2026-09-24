@@ -27,6 +27,9 @@ jobs:
           pip install -r requirements.txt
 
       - name: Refresh OHLCV CSV files
+        env:
+          TWELVE_DATA_API_KEY: ${{ secrets.TWELVE_DATA_API_KEY }}
+          ALPHA_VANTAGE_API_KEY: ${{ secrets.ALPHA_VANTAGE_API_KEY }}
         run: python main.py --once
 
       - name: Commit and push data changes
