@@ -51,7 +51,7 @@ python main.py --once
 
 ## Auto-update behavior
 
-The project includes a GitHub Actions workflow that runs every 30 minutes and pushes updated CSV files back to the repository automatically.
+The project includes a GitHub Actions workflow that runs every 5 minutes and pushes updated CSV files back to the repository automatically.
 
 ## Assumptions
 
