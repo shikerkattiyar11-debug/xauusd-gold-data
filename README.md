@@ -65,6 +65,19 @@ because a quote stream does not provide exchange-traded volume for spot XAU/USD.
 This process must stay running on a local machine or VPS. GitHub Actions and GitHub
 Pages are not suitable for a one-second live stream.
 
+## Virtual deployment
+
+The collector is containerized for a continuously running cloud worker. For local Docker:
+
+```bash
+copy .env.example .env
+docker compose up -d --build
+```
+
+For Render, create a new Blueprint from this repository. `render.yaml` creates a worker
+with a persistent disk mounted at `/app/data`; add `TWELVE_DATA_API_KEY` when Render
+asks for the secret. The collector then keeps running even when the laptop is offline.
+
 ## Auto-update behavior
 
 The project includes a GitHub Actions workflow that runs every 5 minutes and pushes updated CSV files back to the repository automatically.

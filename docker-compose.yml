@@ -1,0 +1,11 @@
+services:
+  xauusd-live:
+    build: .
+    restart: unless-stopped
+    env_file:
+      - .env
+    volumes:
+      - xauusd-data:/app/data
+
+volumes:
+  xauusd-data:
