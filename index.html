@@ -4,133 +4,244 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>XAU/USD Gold Data Dashboard</title>
-    <meta http-equiv="refresh" content="120" />
     <style>
       :root {
-        --bg: #0f172a;
-        --panel: #111827;
-        --panel-alt: #1f2937;
-        --accent: #22c55e;
-        --accent-2: #38bdf8;
+        --bg: #0b1220;
+        --bg-2: #111827;
+        --panel: rgba(17, 24, 39, 0.96);
+        --panel-2: rgba(15, 23, 42, 0.92);
+        --soft: rgba(148, 163, 184, 0.12);
+        --border: rgba(148, 163, 184, 0.18);
         --text: #e5e7eb;
         --muted: #94a3b8;
-        --border: rgba(148, 163, 184, 0.24);
+        --green: #22c55e;
+        --green-soft: rgba(34, 197, 94, 0.18);
+        --red: #ef4444;
+        --red-soft: rgba(239, 68, 68, 0.18);
+        --blue: #38bdf8;
+        --highlight: #f8fafc;
       }
 
       * { box-sizing: border-box; }
 
       body {
         margin: 0;
-        font-family: Arial, Helvetica, sans-serif;
-        background: linear-gradient(180deg, var(--bg), #0b1120 100%);
+        background: linear-gradient(180deg, #060d18 0%, #0b1220 100%);
         color: var(--text);
+        font-family: Segoe UI, Tahoma, Geneva, Verdana, sans-serif;
       }
 
       .container {
-        max-width: 1200px;
-        margin: 32px auto;
-        padding: 0 16px 48px;
+        max-width: 1280px;
+        margin: 0 auto;
+        padding: 18px 16px 32px;
       }
 
-      .header {
+      .topbar {
         display: flex;
-        flex-wrap: wrap;
+        align-items: center;
         justify-content: space-between;
+        gap: 12px;
+        padding: 10px 14px 18px;
+        border-bottom: 1px solid var(--border);
+        margin-bottom: 18px;
+      }
+
+      .symbol-block {
+        display: flex;
         align-items: center;
         gap: 12px;
-        margin-bottom: 20px;
       }
 
-      .title-wrap h1 {
-        margin: 0;
-        font-size: clamp(28px, 3vw, 42px);
+      .pair-badge {
+        background: rgba(56, 189, 248, 0.12);
+        border: 1px solid rgba(56, 189, 248, 0.28);
+        color: var(--blue);
+        border-radius: 999px;
+        padding: 5px 10px;
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
       }
 
-      .pill {
-        display: inline-flex;
+      .symbol-name {
+        font-size: clamp(20px, 2vw, 28px);
+        font-weight: 700;
+      }
+
+      .toolbar {
+        display: flex;
         align-items: center;
         gap: 8px;
+        flex-wrap: wrap;
+      }
+
+      .tool-btn,
+      .indicator-btn {
+        background: rgba(148, 163, 184, 0.06);
+        border: 1px solid var(--border);
+        color: var(--muted);
+        border-radius: 8px;
         padding: 8px 12px;
-        border-radius: 999px;
-        background: rgba(34, 197, 94, 0.14);
-        color: var(--accent);
-        border: 1px solid rgba(34, 197, 94, 0.4);
         font-size: 12px;
         font-weight: 700;
-        letter-spacing: 0.04em;
-        text-transform: uppercase;
+        cursor: pointer;
+        transition: 0.15s ease;
+      }
+
+      .tool-btn:hover,
+      .indicator-btn:hover {
+        border-color: rgba(56, 189, 248, 0.35);
+        color: var(--text);
+      }
+
+      .tool-btn.active,
+      .indicator-btn.active {
+        background: rgba(56, 189, 248, 0.1);
+        border-color: rgba(56, 189, 248, 0.35);
+        color: var(--blue);
+      }
+
+      .indicator-group {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: wrap;
+        margin-top: 10px;
+      }
+
+      .chip {
+        background: rgba(148, 163, 184, 0.06);
+        border: 1px solid var(--border);
+        color: var(--muted);
+        border-radius: 8px;
+        padding: 8px 12px;
+        font-size: 12px;
+        font-weight: 600;
+      }
+
+      .chip.active {
+        background: rgba(56, 189, 248, 0.1);
+        border-color: rgba(56, 189, 248, 0.35);
+        color: var(--blue);
       }
 
       .stats {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-        gap: 16px;
-        margin: 24px 0 28px;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 14px;
+        margin: 18px 0 16px;
       }
 
-      .badge {
-        display: inline-flex;
-        align-items: center;
-        margin-top: 10px;
-        padding: 6px 10px;
-        border-radius: 999px;
-        font-size: 12px;
-        font-weight: 700;
-      }
-
-      .badge.up {
-        background: rgba(34, 197, 94, 0.14);
-        color: #86efac;
-      }
-
-      .badge.down {
-        background: rgba(239, 68, 68, 0.14);
-        color: #fca5a5;
-      }
-
-      .card {
-        background: rgba(17, 24, 39, 0.92);
+      .stat-card {
+        background: var(--panel);
         border: 1px solid var(--border);
-        border-radius: 14px;
-        padding: 18px 20px;
-        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.18);
+        border-radius: 12px;
+        padding: 14px 16px;
+        min-height: 120px;
       }
 
-      .label {
+      .stat-label {
         color: var(--muted);
-        font-size: 12px;
+        font-size: 11px;
         text-transform: uppercase;
         letter-spacing: 0.08em;
       }
 
-      .value {
-        font-size: clamp(22px, 2vw, 32px);
+      .stat-value {
+        margin-top: 12px;
+        font-size: clamp(24px, 2vw, 34px);
         font-weight: 700;
-        margin-top: 10px;
       }
 
-      .panel {
-        background: rgba(17, 24, 39, 0.92);
+      .stat-badge {
+        display: inline-flex;
+        margin-top: 10px;
+        border-radius: 999px;
+        padding: 6px 10px;
+        font-size: 12px;
+        font-weight: 700;
+      }
+
+      .stat-badge.up {
+        background: var(--green-soft);
+        color: #86efac;
+      }
+
+      .stat-badge.down {
+        background: var(--red-soft);
+        color: #fca5a5;
+      }
+
+      .chart-panel {
+        background: var(--panel);
         border: 1px solid var(--border);
         border-radius: 14px;
         overflow: hidden;
       }
 
-      .panel-header {
+      .chart-header {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        background: rgba(148, 163, 184, 0.08);
-        border-bottom: 1px solid var(--border);
+        gap: 8px;
         padding: 12px 16px;
+        border-bottom: 1px solid var(--border);
+        background: rgba(148, 163, 184, 0.04);
+      }
+
+      .market-meta {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        flex-wrap: wrap;
+      }
+
+      .market-meta small {
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .status-live {
+        color: #86efac;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        font-size: 11px;
         font-weight: 700;
       }
 
-      .status {
-        color: var(--accent);
-        font-size: 12px;
-        text-transform: uppercase;
-        letter-spacing: 0.06em;
+      .chart-wrap {
+        padding: 10px 12px 0;
+        background: rgba(11, 18, 32, 0.9);
+      }
+
+      .chart-wrap svg {
+        width: 100%;
+        height: 340px;
+        display: block;
+        background: linear-gradient(180deg, rgba(17, 24, 39, 0.8), rgba(15, 23, 42, 0.9));
+        border-radius: 8px;
+      }
+
+      .bottom-grid {
+        display: grid;
+        grid-template-columns: 1.7fr 1fr;
+        gap: 16px;
+        margin-top: 18px;
+      }
+
+      .table-panel {
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        overflow: hidden;
+      }
+
+      .table-header {
+        padding: 12px 14px;
+        border-bottom: 1px solid var(--border);
+        font-weight: 700;
       }
 
       table {
@@ -140,156 +251,487 @@
 
       th, td {
         padding: 10px 12px;
-        border-bottom: 1px solid var(--border);
         text-align: left;
-        font-size: 14px;
+        font-size: 13px;
+        border-bottom: 1px solid var(--border);
       }
 
       th {
-        background: rgba(148, 163, 184, 0.06);
         color: var(--muted);
+        font-size: 11px;
+        letter-spacing: 0.08em;
         text-transform: uppercase;
-        letter-spacing: 0.05em;
-        font-size: 12px;
+        background: rgba(148, 163, 184, 0.04);
       }
 
       tbody tr:hover {
-        background: rgba(56, 189, 248, 0.06);
+        background: rgba(56, 189, 248, 0.04);
       }
 
-      .muted {
+      .info-panel {
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 14px 16px;
+      }
+
+      .mini-title {
+        color: var(--muted);
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        font-size: 11px;
+        margin-bottom: 12px;
+      }
+
+      .metric-row {
+        display: flex;
+        justify-content: space-between;
+        padding: 10px 0;
+        border-bottom: 1px solid var(--border);
+      }
+
+      .metric-row:last-child {
+        border-bottom: none;
+      }
+
+      .metric-key {
         color: var(--muted);
       }
 
-      .refresh-note {
-        margin-top: 16px;
-        text-align: right;
-        color: var(--muted);
-        font-size: 12px;
+      .metric-value {
+        font-weight: 700;
       }
 
-      @media (max-width: 640px) {
-        .container { padding: 0 12px 32px; }
-        th, td { font-size: 12px; padding: 8px 10px; }
+      @media (max-width: 860px) {
+        .bottom-grid {
+          grid-template-columns: 1fr;
+        }
       }
     </style>
   </head>
   <body>
     <div class="container">
-      <div class="header">
-        <div class="title-wrap">
-          <h1>XAU/USD Gold OHLCV Dashboard</h1>
+      <div class="topbar">
+        <div class="symbol-block">
+          <span class="pair-badge">XAU/USD</span>
+          <div class="symbol-name">Gold Spot</div>
         </div>
-        <div class="pill">Live Auto Refresh</div>
+        <div class="toolbar">
+          <span class="chip active">1m</span>
+          <span class="chip">5m</span>
+          <span class="chip">15m</span>
+          <span class="chip">1h</span>
+          <span class="chip">4h</span>
+          <button class="tool-btn active" type="button" data-tool="pan">Pan</button>
+          <button class="tool-btn" type="button" data-tool="line">Line</button>
+          <button class="tool-btn" type="button" data-tool="horizontal">H Line</button>
+          <button class="tool-btn" type="button" data-tool="vertical">V Line</button>
+          <button class="tool-btn" type="button" data-tool="clear">Clear</button>
+        </div>
+      </div>
+
+      <div class="indicator-group" aria-label="Indicator controls">
+        <button class="indicator-btn active" type="button" data-indicator="ma7">MA 7</button>
+        <button class="indicator-btn active" type="button" data-indicator="ma21">MA 21</button>
+        <button class="indicator-btn" type="button" data-indicator="ema9">EMA 9</button>
+        <button class="indicator-btn" type="button" data-indicator="ema21">EMA 21</button>
       </div>
 
       <div class="stats">
-        <div class="card">
-          <div class="label">Last Price</div>
-          <div class="value" id="last-price">--</div>
-          <div class="badge" id="change-badge">--</div>
+        <div class="stat-card">
+          <div class="stat-label">Last Price</div>
+          <div class="stat-value" id="last-price">--</div>
+          <div class="stat-badge" id="change-badge">--</div>
         </div>
-        <div class="card">
-          <div class="label">High</div>
-          <div class="value" id="high-price">--</div>
+        <div class="stat-card">
+          <div class="stat-label">High</div>
+          <div class="stat-value" id="high-price">--</div>
         </div>
-        <div class="card">
-          <div class="label">Low</div>
-          <div class="value" id="low-price">--</div>
+        <div class="stat-card">
+          <div class="stat-label">Low</div>
+          <div class="stat-value" id="low-price">--</div>
         </div>
-        <div class="card">
-          <div class="label">Volume</div>
-          <div class="value" id="total-volume">--</div>
+        <div class="stat-card">
+          <div class="stat-label">Volume</div>
+          <div class="stat-value" id="total-volume">--</div>
         </div>
       </div>
 
-      <div class="panel">
-        <div class="panel-header">
-          <span>GC=F • 5m Data</span>
-          <span class="status" id="status">Loading...</span>
+      <div class="chart-panel">
+        <div class="chart-header">
+          <div class="market-meta">
+            <span>XAU/USD</span>
+            <small id="market-time">--</small>
+          </div>
+          <div class="status-live" id="status">LIVE</div>
         </div>
-        <table>
-          <thead>
-            <tr>
-              <th>Datetime</th>
-              <th>Open</th>
-              <th>High</th>
-              <th>Low</th>
-              <th>Close</th>
-              <th>Volume</th>
-            </tr>
-          </thead>
-          <tbody id="table-body"></tbody>
-        </table>
+        <div class="chart-wrap">
+          <svg id="chart-svg" viewBox="0 0 800 340" preserveAspectRatio="none" aria-label="Live candlestick chart"></svg>
+        </div>
       </div>
 
-      <div class="refresh-note">Auto-refreshes every 120 seconds.</div>
+      <div class="bottom-grid">
+        <div class="table-panel">
+          <div class="table-header">Recent 1m candles</div>
+          <table>
+            <thead>
+              <tr>
+                <th>Time</th>
+                <th>Open</th>
+                <th>High</th>
+                <th>Low</th>
+                <th>Close</th>
+                <th>Volume</th>
+              </tr>
+            </thead>
+            <tbody id="table-body"></tbody>
+          </table>
+        </div>
+
+        <div class="info-panel">
+          <div class="mini-title">Market Snapshot</div>
+          <div class="metric-row">
+            <span class="metric-key">Open</span>
+            <span class="metric-value" id="open-metric">--</span>
+          </div>
+          <div class="metric-row">
+            <span class="metric-key">Prev Close</span>
+            <span class="metric-value" id="prev-close">--</span>
+          </div>
+          <div class="metric-row">
+            <span class="metric-key">Range</span>
+            <span class="metric-value" id="range-metric">--</span>
+          </div>
+          <div class="metric-row">
+            <span class="metric-key">Trend</span>
+            <span class="metric-value" id="trend-metric">--</span>
+          </div>
+        </div>
+      </div>
     </div>
 
     <script>
-      const CSV_URL = 'https://raw.githubusercontent.com/shikerkattiyar11-debug/xauusd-gold-data/master/data/xauusd_5m.csv';
+      const CSV_URL = 'data/xauusd_1m_live.csv';
+      const chartSvg = document.getElementById('chart-svg');
       const tableBody = document.getElementById('table-body');
       const statusEl = document.getElementById('status');
+      const marketTimeEl = document.getElementById('market-time');
       const lastPriceEl = document.getElementById('last-price');
       const highPriceEl = document.getElementById('high-price');
       const lowPriceEl = document.getElementById('low-price');
       const totalVolumeEl = document.getElementById('total-volume');
       const changeBadgeEl = document.getElementById('change-badge');
+      const openMetricEl = document.getElementById('open-metric');
+      const prevCloseEl = document.getElementById('prev-close');
+      const rangeMetricEl = document.getElementById('range-metric');
+      const trendMetricEl = document.getElementById('trend-metric');
+
+      let chartData = [];
+      let activeTool = 'pan';
+      let activeIndicators = new Set(['ma7', 'ma21']);
+      let drawings = [];
+      let isDrawing = false;
+      let draftDrawing = null;
+
+      const toolButtons = document.querySelectorAll('.tool-btn');
+      const indicatorButtons = document.querySelectorAll('.indicator-btn');
+
+      function getChartPointFromEvent(event) {
+        const rect = chartSvg.getBoundingClientRect();
+        const x = ((event.clientX - rect.left) / rect.width) * 800;
+        const y = ((event.clientY - rect.top) / rect.height) * 340;
+        return { x, y };
+      }
+
+      function setActiveTool(tool) {
+        activeTool = tool;
+        toolButtons.forEach((button) => {
+          button.classList.toggle('active', button.dataset.tool === tool);
+        });
+
+        if (tool === 'clear') {
+          drawings = [];
+          draftDrawing = null;
+          renderCandles(chartData);
+        }
+      }
+
+      function toggleIndicator(name) {
+        if (activeIndicators.has(name)) {
+          activeIndicators.delete(name);
+        } else {
+          activeIndicators.add(name);
+        }
+
+        indicatorButtons.forEach((button) => {
+          const enabled = activeIndicators.has(button.dataset.indicator);
+          button.classList.toggle('active', enabled);
+        });
+
+        renderCandles(chartData);
+      }
+
+      function movingAverage(values, period) {
+        return values.map((_, index) => {
+          if (index + 1 < period) return null;
+          const slice = values.slice(index - period + 1, index + 1);
+          const avg = slice.reduce((sum, value) => sum + value, 0) / slice.length;
+          return avg;
+        });
+      }
+
+      function exponentialMovingAverage(values, period) {
+        const multiplier = 2 / (period + 1);
+        const result = [];
+        values.forEach((value, index) => {
+          if (index === 0) {
+            result.push(value);
+            return;
+          }
+          const prev = result[index - 1] ?? value;
+          result.push((value - prev) * multiplier + prev);
+        });
+        return result;
+      }
+
+      function buildIndicatorSeries(candles) {
+        const closes = candles.map((c) => Number(c.Close));
+        const series = {
+          ma7: movingAverage(closes, 7),
+          ma21: movingAverage(closes, 21),
+          ema9: exponentialMovingAverage(closes, 9),
+          ema21: exponentialMovingAverage(closes, 21),
+        };
+        return series;
+      }
+
+      function formatAxisTime(value) {
+        if (!value) return '';
+        const date = new Date(value.replace(' ', 'T'));
+        if (Number.isNaN(date.getTime())) return value;
+        return date.toLocaleString('en-IN', {
+          day: '2-digit',
+          month: 'short',
+          hour: '2-digit',
+          minute: '2-digit'
+        });
+      }
 
       function formatNumber(value) {
         return Number(value).toLocaleString(undefined, { maximumFractionDigits: 4 });
       }
 
+      function renderCandles(candles) {
+        if (!candles.length) {
+          chartSvg.innerHTML = '';
+          return;
+        }
+
+        chartData = candles;
+        const indicatorSeries = buildIndicatorSeries(candles);
+
+        const width = 800;
+        const height = 340;
+        const padding = 24;
+        const chartHeight = height - padding * 2;
+        const plotWidth = width - padding * 2;
+        const lows = candles.map((c) => Number(c.Low));
+        const highs = candles.map((c) => Number(c.High));
+        const min = Math.min(...lows);
+        const max = Math.max(...highs);
+        const range = max - min || 1;
+        const candleStep = candles.length > 1 ? plotWidth / Math.max(1, candles.length - 1) : plotWidth;
+        const candleWidth = Math.max(4, candleStep * 0.7);
+
+        const xForIndex = (index) => padding + (index / Math.max(1, candles.length - 1)) * plotWidth;
+        const yForPrice = (price) => padding + ((max - price) / range) * chartHeight;
+
+        const drawPath = (points) => {
+          const validPoints = points.filter((point) => point && Number.isFinite(point.y));
+          if (!validPoints.length) return '';
+          return validPoints.map((point, index) => `${index === 0 ? 'M' : 'L'} ${point.x} ${point.y}`).join(' ');
+        };
+
+        const indicatorMarkup = ['ma7', 'ma21', 'ema9', 'ema21']
+          .filter((name) => activeIndicators.has(name))
+          .map((name) => {
+            const points = candles.map((candle, index) => {
+              const value = indicatorSeries[name][index];
+              if (!Number.isFinite(value)) return null;
+              return { x: xForIndex(index), y: yForPrice(value) };
+            });
+            const color = { ma7: '#38bdf8', ma21: '#fbbf24', ema9: '#a78bfa', ema21: '#f472b6' }[name];
+            return `<path d="${drawPath(points)}" fill="none" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />`;
+          }).join('');
+
+        const timeLabels = Array.from({ length: 6 }, (_, i) => {
+          const index = Math.round((i / 5) * (candles.length - 1));
+          const candle = candles[index];
+          const labelX = xForIndex(index);
+          if (!candle) return '';
+          return `
+            <text x="${labelX}" y="${height - 8}" text-anchor="middle" fill="rgba(148,163,184,0.9)" font-size="10">${formatAxisTime(candle.Datetime)}</text>
+          `;
+        }).join('');
+
+        const gridLines = Array.from({ length: 6 }, (_, i) => {
+          const y = padding + (i / 5) * chartHeight;
+          return `<line x1="${padding}" y1="${y}" x2="${width - padding}" y2="${y}" stroke="rgba(148,163,184,0.16)" />`;
+        }).join('');
+
+        const candleMarkup = candles.map((c, index) => {
+          const x = xForIndex(index);
+          const open = Number(c.Open);
+          const high = Number(c.High);
+          const low = Number(c.Low);
+          const close = Number(c.Close);
+          const color = close >= open ? '#22c55e' : '#ef4444';
+
+          const highY = yForPrice(high);
+          const lowY = yForPrice(low);
+          const openY = yForPrice(open);
+          const closeY = yForPrice(close);
+          const topY = Math.min(openY, closeY);
+          const bodyHeight = Math.max(4, Math.abs(closeY - openY));
+
+          return `
+            <line x1="${x}" y1="${highY}" x2="${x}" y2="${lowY}" stroke="${color}" stroke-width="2" stroke-linecap="round" />
+            <rect x="${x - candleWidth / 2}" y="${topY}" width="${candleWidth}" height="${bodyHeight}" fill="${color}" rx="2"/>
+          `;
+        }).join('');
+
+        const drawingMarkup = drawings.map((drawing) => {
+          if (drawing.type === 'line') {
+            return `<line x1="${drawing.start.x}" y1="${drawing.start.y}" x2="${drawing.end.x}" y2="${drawing.end.y}" stroke="#f8fafc" stroke-width="1.5" stroke-dasharray="6 4" />`;
+          }
+          if (drawing.type === 'horizontal') {
+            return `<line x1="${padding}" y1="${drawing.start.y}" x2="${width - padding}" y2="${drawing.start.y}" stroke="#f8fafc" stroke-width="1.5" stroke-dasharray="6 4" />`;
+          }
+          if (drawing.type === 'vertical') {
+            return `<line x1="${drawing.start.x}" y1="${padding}" x2="${drawing.start.x}" y2="${height - padding}" stroke="#f8fafc" stroke-width="1.5" stroke-dasharray="6 4" />`;
+          }
+          return '';
+        }).join('');
+
+        const draftMarkup = draftDrawing ? (() => {
+          if (draftDrawing.type === 'line') {
+            return `<line x1="${draftDrawing.start.x}" y1="${draftDrawing.start.y}" x2="${draftDrawing.end.x}" y2="${draftDrawing.end.y}" stroke="#f8fafc" stroke-width="1.5" stroke-dasharray="6 4" />`;
+          }
+          if (draftDrawing.type === 'horizontal') {
+            return `<line x1="${padding}" y1="${draftDrawing.start.y}" x2="${width - padding}" y2="${draftDrawing.start.y}" stroke="#f8fafc" stroke-width="1.5" stroke-dasharray="6 4" />`;
+          }
+          if (draftDrawing.type === 'vertical') {
+            return `<line x1="${draftDrawing.start.x}" y1="${padding}" x2="${draftDrawing.start.x}" y2="${height - padding}" stroke="#f8fafc" stroke-width="1.5" stroke-dasharray="6 4" />`;
+          }
+          return '';
+        })() : '';
+
+        chartSvg.innerHTML = `
+          <g>
+            ${gridLines}
+            ${timeLabels}
+            ${indicatorMarkup}
+            ${candleMarkup}
+            ${drawingMarkup}
+            ${draftMarkup}
+          </g>
+        `;
+      }
+
       function getStatusText(lastTimestamp) {
         if (!lastTimestamp) return 'Unknown';
-        const lastDate = new Date(lastTimestamp);
+        const lastDate = new Date(lastTimestamp.replace(' ', 'T'));
         const now = new Date();
         const minutesDiff = (now - lastDate) / 60000;
-        return minutesDiff <= 15 ? 'LIVE' : 'STALE';
+        return minutesDiff <= 10 ? 'LIVE' : 'STALE';
+      }
+
+      function attachChartInteractions() {
+        chartSvg.addEventListener('pointerdown', (event) => {
+          if (activeTool === 'pan' || !chartData.length) return;
+          const start = getChartPointFromEvent(event);
+          isDrawing = true;
+          draftDrawing = { type: activeTool, start, end: start };
+          renderCandles(chartData);
+        });
+
+        chartSvg.addEventListener('pointermove', (event) => {
+          if (!isDrawing || !draftDrawing || activeTool === 'pan') return;
+          const point = getChartPointFromEvent(event);
+          draftDrawing.end = point;
+          renderCandles(chartData);
+        });
+
+        chartSvg.addEventListener('pointerup', () => {
+          if (!isDrawing || !draftDrawing || activeTool === 'pan') return;
+          drawings.push(draftDrawing);
+          draftDrawing = null;
+          isDrawing = false;
+          renderCandles(chartData);
+        });
+
+        chartSvg.addEventListener('pointerleave', () => {
+          if (!isDrawing || !draftDrawing || activeTool === 'pan') return;
+          drawings.push(draftDrawing);
+          draftDrawing = null;
+          isDrawing = false;
+          renderCandles(chartData);
+        });
       }
 
       async function loadData() {
         try {
-          statusEl.textContent = 'Loading...';
           const response = await fetch(CSV_URL + '?t=' + Date.now(), { cache: 'no-store' });
-          if (!response.ok) {
-            throw new Error('CSV fetch failed');
-          }
+          if (!response.ok) throw new Error('CSV fetch failed');
 
           const csvText = await response.text();
           const rows = csvText.trim().split('\n').slice(1);
-          const parsed = rows.map((row) => {
-            const [Datetime, Open, High, Low, Close, Volume] = row.split(',');
-            return { Datetime, Open, High, Low, Close, Volume };
-          }).filter((row) => row.Datetime);
+          const parsed = rows
+            .map((row) => {
+              const [Datetime, Open, High, Low, Close, Volume] = row.split(',');
+              return { Datetime, Open, High, Low, Close, Volume };
+            })
+            .filter((row) => row && row.Datetime);
 
-          if (parsed.length === 0) {
-            throw new Error('No data rows');
-          }
+          if (!parsed.length) throw new Error('No data rows');
 
           const last = parsed[parsed.length - 1];
           const previous = parsed[parsed.length - 2] || last;
-          const priceChange = Number(last.Close) - Number(previous.Close);
-          const priceChangePct = previous.Close ? (priceChange / Number(previous.Close)) * 100 : 0;
+          const lastClose = Number(last.Close);
+          const prevClose = Number(previous.Close);
+          const priceChange = lastClose - prevClose;
+          const priceChangePct = prevClose ? (priceChange / prevClose) * 100 : 0;
           const highs = parsed.map((row) => Number(row.High));
           const lows = parsed.map((row) => Number(row.Low));
           const totalVolume = parsed.reduce((sum, row) => sum + Number(row.Volume || 0), 0);
 
-          lastPriceEl.textContent = formatNumber(last.Close);
+          lastPriceEl.textContent = formatNumber(lastClose);
           highPriceEl.textContent = formatNumber(Math.max(...highs));
           lowPriceEl.textContent = formatNumber(Math.min(...lows));
           totalVolumeEl.textContent = formatNumber(totalVolume);
 
-          const changeText = `${priceChange >= 0 ? '+' : ''}${formatNumber(priceChange)} (${priceChange >= 0 ? '+' : ''}${priceChangePct.toFixed(2)}%)`;
-          changeBadgeEl.textContent = changeText;
-          changeBadgeEl.className = `badge ${priceChange >= 0 ? 'up' : 'down'}`;
+          const changeLabel = `${priceChange >= 0 ? '+' : ''}${formatNumber(priceChange)} (${priceChange >= 0 ? '+' : ''}${priceChangePct.toFixed(2)}%)`;
+          changeBadgeEl.textContent = changeLabel;
+          changeBadgeEl.className = `stat-badge ${priceChange >= 0 ? 'up' : 'down'}`;
 
-          const lastTimestamp = new Date(last.Datetime.replace(' ', 'T'));
-          statusEl.textContent = getStatusText(lastTimestamp);
-          statusEl.style.color = getStatusText(lastTimestamp) === 'LIVE' ? '#86efac' : '#fca5a5';
+          openMetricEl.textContent = formatNumber(Number(last.Open));
+          prevCloseEl.textContent = formatNumber(prevClose);
+          rangeMetricEl.textContent = formatNumber(Math.max(...highs) - Math.min(...lows));
+          trendMetricEl.textContent = priceChange >= 0 ? 'Bullish' : 'Bearish';
 
-          const newestRows = parsed.slice(-12).reverse();
-          tableBody.innerHTML = newestRows.map((row) => `
+          const statusText = getStatusText(last.Datetime);
+          statusEl.textContent = statusText;
+          statusEl.style.color = statusText === 'LIVE' ? '#86efac' : '#fca5a5';
+          marketTimeEl.textContent = new Date(last.Datetime.replace(' ', 'T')).toLocaleString('en-IN', {
+            day: '2-digit',
+            month: 'short',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+          });
+
+          const recentRows = parsed.slice(-12).reverse();
+          tableBody.innerHTML = recentRows.map((row) => `
             <tr>
               <td>${row.Datetime}</td>
               <td>${formatNumber(row.Open)}</td>
@@ -300,15 +742,36 @@
             </tr>
           `).join('');
 
-          statusEl.textContent = 'Live';
+          renderCandles(parsed);
         } catch (error) {
           console.error(error);
-          statusEl.textContent = 'Error';
+          statusEl.textContent = 'ERROR';
+          statusEl.style.color = '#fca5a5';
         }
       }
 
+      toolButtons.forEach((button) => {
+        button.addEventListener('click', () => {
+          const tool = button.dataset.tool;
+          if (tool === 'clear') {
+            drawings = [];
+            draftDrawing = null;
+            isDrawing = false;
+            setActiveTool('pan');
+            renderCandles(chartData);
+            return;
+          }
+          setActiveTool(tool);
+        });
+      });
+
+      indicatorButtons.forEach((button) => {
+        button.addEventListener('click', () => toggleIndicator(button.dataset.indicator));
+      });
+
+      attachChartInteractions();
       loadData();
-      setInterval(loadData, 120000);
+      setInterval(loadData, 15000);
     </script>
   </body>
 </html>

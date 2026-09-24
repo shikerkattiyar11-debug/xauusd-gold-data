@@ -5,3 +5,6 @@ __pycache__/
 .env
 .vscode/
 .DS_Store
+data/live_ohlcv.db
+data/xauusd_1m_live.csv
+data/xauusd_1m_live.parquet

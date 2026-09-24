@@ -9,8 +9,14 @@ from pathlib import Path
 
 import pandas as pd
 import websocket
+from dotenv import load_dotenv
+from zoneinfo import ZoneInfo
+
+BASE_DIR = Path(__file__).resolve().parent
+load_dotenv(BASE_DIR / ".env")
 
 WS_URL = "wss://ws.twelvedata.com/v1/quotes/price"
+IST = ZoneInfo("Asia/Kolkata")
 
 
 class LiveCollector:
@@ -37,13 +43,14 @@ class LiveCollector:
         self.db.close()
 
     def record_tick(self, price: float, received_at: datetime) -> None:
-        timestamp = received_at.astimezone(timezone.utc).replace(microsecond=0).isoformat()
+        local_dt = received_at.astimezone(IST)
+        timestamp = local_dt.replace(microsecond=0).isoformat()
         self.db.execute(
             "INSERT INTO ticks (timestamp, symbol, price) VALUES (?, ?, ?)",
             (timestamp, self.symbol, price),
         )
 
-        bucket = received_at.astimezone(timezone.utc).replace(second=0, microsecond=0)
+        bucket = local_dt.replace(second=0, microsecond=0)
         if self.current_bucket != bucket:
             self.flush_candle()
             self.current_bucket = bucket
@@ -96,13 +103,15 @@ class LiveCollector:
         if not api_key:
             raise RuntimeError("Set TWELVE_DATA_API_KEY before starting the live collector.")
 
+        ws_url = f"{WS_URL}?apikey={api_key}"
+
         while True:
             try:
                 print(f"Connecting to Twelve Data for {self.symbol}...")
-                socket = websocket.create_connection(WS_URL, timeout=30)
+                socket = websocket.create_connection(ws_url, timeout=30)
                 socket.send(json.dumps({
                     "action": "subscribe",
-                    "params": {"symbols": self.symbol, "apikey": api_key},
+                    "params": {"symbols": self.symbol},
                 }))
                 while True:
                     message = json.loads(socket.recv())

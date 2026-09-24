@@ -74,9 +74,12 @@ copy .env.example .env
 docker compose up -d --build
 ```
 
-For Render, create a new Blueprint from this repository. `render.yaml` creates a worker
-with a persistent disk mounted at `/app/data`; add `TWELVE_DATA_API_KEY` when Render
-asks for the secret. The collector then keeps running even when the laptop is offline.
+For Render, create a new Blueprint from this repository. `render.yaml` creates a free web
+service that serves the dashboard and runs the collector in the same container; add
+`TWELVE_DATA_API_KEY` when Render asks for the secret. Open the Render service URL to
+view the dashboard when the laptop is offline. Render's free service can sleep after
+inactivity and its filesystem is ephemeral, so a restart can reset the live CSV history.
+Use a paid persistent disk or VPS for guaranteed 24/7 collection and durable history.
 
 ## Auto-update behavior
 

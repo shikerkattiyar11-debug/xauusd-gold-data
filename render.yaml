@@ -1,14 +1,12 @@
 services:
-  - type: worker
+  - type: web
     name: xauusd-live-collector
+    plan: free
     runtime: docker
     dockerfilePath: ./Dockerfile
     dockerContext: .
     autoDeploy: true
+    healthCheckPath: /
     envVars:
       - key: TWELVE_DATA_API_KEY
         sync: false
-    disk:
-      name: xauusd-data
-      mountPath: /app/data
-      sizeGB: 1

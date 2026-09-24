@@ -3,3 +3,4 @@ numpy>=1.26.0
 yfinance>=0.2.60
 websocket-client>=1.8.0
 pyarrow>=18.0.0
+python-dotenv>=1.0.1
