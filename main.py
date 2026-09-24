@@ -24,6 +24,8 @@ PERIODS = {
     "1d": "5y",
 }
 CSV_COLUMNS = ["Datetime", "Open", "High", "Low", "Close", "Volume"]
+FETCH_RETRIES = 3
+FETCH_RETRY_DELAY_SECONDS = 5
 
 
 def ensure_data_dir() -> None:
@@ -99,9 +101,56 @@ def fetch_ohlcv(interval: str, period: str) -> pd.DataFrame:
     return normalize_ohlcv(data)
 
 
+def fetch_ohlcv_with_retry(interval: str, period: str) -> pd.DataFrame:
+    last_error = None
+    for attempt in range(1, FETCH_RETRIES + 1):
+        try:
+            data = fetch_ohlcv(interval, period)
+            if not data.empty:
+                return data
+            last_error = ValueError("Downloaded dataset was empty.")
+        except Exception as exc:  # pragma: no cover - defensive network fallback
+            last_error = exc
+            print(f"Retry {attempt}/{FETCH_RETRIES} for {interval} failed: {exc}")
+        if attempt < FETCH_RETRIES:
+            time.sleep(FETCH_RETRY_DELAY_SECONDS)
+    if last_error is not None:
+        print(f"Unable to fetch {interval} data after {FETCH_RETRIES} attempts: {last_error}")
+    return pd.DataFrame()
+
+
+def detect_time_gap(df: pd.DataFrame, interval: str) -> None:
+    if df.empty or len(df) < 2:
+        return
+
+    interval_minutes = {
+        "5m": 5,
+        "10m": 10,
+        "15m": 15,
+        "1h": 60,
+        "4h": 240,
+        "1d": 1440,
+    }.get(interval, 5)
+
+    timestamps = pd.to_datetime(df["Datetime"], format="%Y-%m-%d %H:%M:%S")
+    gaps = timestamps.diff().dropna()
+    if gaps.empty:
+        return
+
+    longest_gap = gaps.max()
+    if longest_gap > pd.Timedelta(minutes=interval_minutes * 2):
+        print(f"Possible data gap detected for {interval}: longest gap = {longest_gap}")
+
+
 def update_timeframe(interval: str, file_name: str) -> None:
     output_path = DATA_DIR / file_name
-    data = fetch_ohlcv(interval, PERIODS[interval])
+    data = fetch_ohlcv_with_retry(interval, PERIODS[interval])
+    if data.empty:
+        if output_path.exists():
+            print(f"No fresh {interval} data available; keeping existing file.")
+        return
+
+    detect_time_gap(data, interval)
 
     if output_path.exists():
         existing = pd.read_csv(output_path)
@@ -117,9 +166,13 @@ def update_timeframe(interval: str, file_name: str) -> None:
             combined = data
         combined = combined[CSV_COLUMNS].drop_duplicates(subset=["Datetime"]).sort_values("Datetime").reset_index(drop=True)
         combined.to_csv(output_path, index=False)
+        print(f"Saved {file_name} with {len(combined)} rows")
     else:
         if not output_path.exists():
             data.to_csv(output_path, index=False)
+            print(f"Created {file_name} with {len(data)} rows")
+        else:
+            print(f"No new rows for {file_name}; existing data already current.")
 
 
 def update_all_timeframes() -> None:
