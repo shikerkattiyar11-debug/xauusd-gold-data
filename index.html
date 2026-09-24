@@ -119,6 +119,7 @@
         padding: 8px 12px;
         font-size: 12px;
         font-weight: 600;
+        cursor: pointer;
       }
 
       .chip.active {
@@ -317,11 +318,12 @@
           <div class="symbol-name">Gold Spot</div>
         </div>
         <div class="toolbar">
-          <span class="chip active">1m</span>
-          <span class="chip">5m</span>
-          <span class="chip">15m</span>
-          <span class="chip">1h</span>
-          <span class="chip">4h</span>
+          <button class="chip timeframe-btn active" type="button" data-timeframe="1m">1m</button>
+          <button class="chip timeframe-btn" type="button" data-timeframe="5m">5m</button>
+          <button class="chip timeframe-btn" type="button" data-timeframe="10m">10m</button>
+          <button class="chip timeframe-btn" type="button" data-timeframe="15m">15m</button>
+          <button class="chip timeframe-btn" type="button" data-timeframe="1h">1h</button>
+          <button class="chip timeframe-btn" type="button" data-timeframe="4h">4h</button>
           <button class="tool-btn active" type="button" data-tool="pan">Pan</button>
           <button class="tool-btn" type="button" data-tool="line">Line</button>
           <button class="tool-btn" type="button" data-tool="horizontal">H Line</button>
@@ -372,7 +374,7 @@
 
       <div class="bottom-grid">
         <div class="table-panel">
-          <div class="table-header">Recent 1m candles</div>
+          <div class="table-header" id="table-title">Recent 1m candles</div>
           <table>
             <thead>
               <tr>
@@ -411,7 +413,15 @@
     </div>
 
     <script>
-      const CSV_URL = 'data/xauusd_1m_live.csv';
+      const CSV_URLS = {
+        '1m': 'data/xauusd_1m_live.csv',
+        '5m': 'data/xauusd_5m.csv',
+        '10m': 'data/xauusd_10m.csv',
+        '15m': 'data/xauusd_15m.csv',
+        '1h': 'data/xauusd_1h.csv',
+        '4h': 'data/xauusd_4h.csv',
+      };
+      let activeTimeframe = '1m';
       const chartSvg = document.getElementById('chart-svg');
       const tableBody = document.getElementById('table-body');
       const statusEl = document.getElementById('status');
@@ -425,6 +435,7 @@
       const prevCloseEl = document.getElementById('prev-close');
       const rangeMetricEl = document.getElementById('range-metric');
       const trendMetricEl = document.getElementById('trend-metric');
+      const tableTitleEl = document.getElementById('table-title');
 
       let chartData = [];
       let activeTool = 'pan';
@@ -435,6 +446,7 @@
 
       const toolButtons = document.querySelectorAll('.tool-btn');
       const indicatorButtons = document.querySelectorAll('.indicator-btn');
+      const timeframeButtons = document.querySelectorAll('.timeframe-btn');
 
       function getChartPointFromEvent(event) {
         const rect = chartSvg.getBoundingClientRect();
@@ -519,6 +531,18 @@
 
       function formatNumber(value) {
         return Number(value).toLocaleString(undefined, { maximumFractionDigits: 4 });
+      }
+
+      function setTimeframe(timeframe) {
+        if (!CSV_URLS[timeframe] || activeTimeframe === timeframe) return;
+        activeTimeframe = timeframe;
+        timeframeButtons.forEach((button) => {
+          button.classList.toggle('active', button.dataset.timeframe === timeframe);
+        });
+        tableTitleEl.textContent = `Recent ${timeframe} candles`;
+        statusEl.textContent = 'LOADING';
+        statusEl.style.color = '#fbbf24';
+        loadData();
       }
 
       function renderCandles(candles) {
@@ -681,7 +705,7 @@
 
       async function loadData() {
         try {
-          const response = await fetch(CSV_URL + '?t=' + Date.now(), { cache: 'no-store' });
+          const response = await fetch(CSV_URLS[activeTimeframe] + '?t=' + Date.now(), { cache: 'no-store' });
           if (!response.ok) throw new Error('CSV fetch failed');
 
           const csvText = await response.text();
@@ -719,9 +743,9 @@
           rangeMetricEl.textContent = formatNumber(Math.max(...highs) - Math.min(...lows));
           trendMetricEl.textContent = priceChange >= 0 ? 'Bullish' : 'Bearish';
 
-          const statusText = getStatusText(last.Datetime);
+          const statusText = activeTimeframe === '1m' ? getStatusText(last.Datetime) : 'HISTORY';
           statusEl.textContent = statusText;
-          statusEl.style.color = statusText === 'LIVE' ? '#86efac' : '#fca5a5';
+          statusEl.style.color = statusText === 'LIVE' ? '#86efac' : statusText === 'HISTORY' ? '#38bdf8' : '#fca5a5';
           marketTimeEl.textContent = new Date(last.Datetime.replace(' ', 'T')).toLocaleString('en-IN', {
             day: '2-digit',
             month: 'short',
@@ -763,6 +787,10 @@
           }
           setActiveTool(tool);
         });
+      });
+
+      timeframeButtons.forEach((button) => {
+        button.addEventListener('click', () => setTimeframe(button.dataset.timeframe));
       });
 
       indicatorButtons.forEach((button) => {
